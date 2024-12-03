@@ -4,8 +4,8 @@ void main() {
   int e = 0, d = 0, n = 0;
 
   // let's take example values:
-  int p = 61, q = 53;
-  int plainText = 123;
+  int p = 7, q = 11;
+  int plainText = 9;
   int cipherText = 0;
   // find out ciphter text? it should be 37
 
@@ -30,6 +30,35 @@ void main() {
   plainText = decryptText(cipherText, d, n);
   print("cipher text: $cipherText, plain text: $plainText");
 }
+
+// function to generate the public key (e, n)
+final primes = [
+  2,
+  3,
+  5,
+  7,
+  11,
+  13,
+  17,
+  19,
+  23,
+  29,
+  31,
+  37,
+  41,
+  43,
+  47,
+  53,
+  59,
+  61,
+  67,
+  71,
+  73,
+  79,
+  83,
+  89,
+  97
+];
 
 // finding the bezout identity,
 // a backwards process of the euclidean algorithm.
@@ -73,9 +102,7 @@ int bezout(int phiN, int e) {
 // decrypt the code with the private key obtained
 // convert cipher text c, into m using private key (d, n)
 int decryptText(int cipherText, int d, int n) {
-  int power = pow(cipherText, d) as int;
-  int plainText = power % n;
-  return plainText;
+  return powMod(cipherText, d, n);
 }
 
 // generate cipher text from plain text m, using public key (e, n)
@@ -98,40 +125,42 @@ int findGcd(int phiN, int e) {
   return findGcd(e, rem);
 }
 
-// function to generate the public key (e, n)
 (int, int) generatePublicKey(int p, int q) {
   int n = p * q;
   int phi = (p - 1) * (q - 1);
 
-  // let's find e
-  int e = 0;
-
-  // iterate through 1 < e < phi(n)
-  for (int i = 1; i < phi; i++) {
-    // check if gcd of phi and current number is 1
-    // if it's 1, then set that number to e.
-    int checkGcd = findGcd(phi, i);
-    if (checkGcd == 1) {
-      // possible edge case here, what if we don't find
-      // a value that doesn't satisfy this condition
-      e = i;
-      break;
+  for (int i = 0; i < primes.length; i++) {
+    if (findGcd(phi, primes[i]) == 1) {
+      return (primes[i], n);
     }
   }
-  return (e, n);
+
+  throw Exception('Unable to find a suitable public key exponent e');
 }
 
 // function to generate private key (d, n)
 (int, int) obtainPrivateKey(int p, int q, int e) {
   int phi = (p - 1) * (q - 1);
-  int d = 0;
   // use bezout's algorithm, find numbers x and y
   // such that e * x + phi * y = 1
   // now, we can substiture x with d, so that
   // e * d + phi * y = 1
   // let's pass it on to the bezout function to obtain x.
   // since y is not our concern here.
-  d = bezout(phi, e);
+  int d = bezout(phi, e);
 
-  return (e, d);
+  return (d, p * q);
+}
+
+int powMod(int base, int exponent, int modulus) {
+  int result = 1;
+  base = base % modulus;
+  while (exponent > 0) {
+    if (exponent % 2 == 1) {
+      result = (result * base) % modulus;
+    }
+    exponent = exponent ~/ 2;
+    base = (base * base) % modulus;
+  }
+  return result;
 }

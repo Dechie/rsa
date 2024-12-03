@@ -14,10 +14,8 @@ void main() {
   // show public key: should be 7, 77
   print("public key <e, n> : < $e, $n >");
 
-  int e_copy = e;
-  int n_copy = n;
   // step 2: encrypt the text.
-  cipherText = encryptText(plainText, e_copy, n_copy);
+  cipherText = encryptText(plainText, e, n);
   // show plaintext and ciphertext: should be 9 and 37
   print("plain text: $plainText, cipherText: $cipherText");
 
@@ -63,46 +61,23 @@ final primes = [
 // finding the bezout identity,
 // a backwards process of the euclidean algorithm.
 // in out case, e * d + phi * y = 1, 1 is the gcd,
-// are sure of that, we now need to find d.
+// we are sure of that, we now need to find d.
 // ax + by = 1 becomes ed + phi*y = 1
-int bezout(int phiN, int e) {
-  int x = 0, y = 1, lastX = 1, lastY = 0;
-  // my mediocre implementation :)
-  while (e != 0) {
-    if (e == 1) {
-      //int returnVal = (lastX % phiN + phiN) % phiN;
-      //print("when e is 1:");
-      //print("e: $e * x: $x + phi: $phiN * y: $y");
-      //print("return val: $returnVal");
-      //return returnVal;
-      return x;
-    }
-    //print("e: $e * x: $x + phi: $phiN * y: $y");
-    int quo = phiN ~/ e;
-    int rem = phiN % e;
 
-    phiN = e;
-    e = rem;
-
-    int tempX = x;
-    x = lastX - quo * x;
-    lastX = tempX;
-
-    int tempY = y;
-    y = lastY - quo * y;
-    lastY = tempY;
+(int, int) bezout(int a, int b) {
+  if (b == 0) {
+    return (1, 0);
   }
+  int x =0, y = 0;
 
-  int returnVal = (lastX % phiN + phiN) % phiN;
-
-  //return returnVal;
-  return x;
+  (x,y) = bezout(b, a % b);
+  return (y, (a ~/ b) * x + y);
 }
 
 // decrypt the code with the private key obtained
 // convert cipher text c, into m using private key (d, n)
 int decryptText(int cipherText, int d, int n) {
-  return powMod(cipherText, d, n);
+  return pow(cipherText, d).toInt() % n;
 }
 
 // generate cipher text from plain text m, using public key (e, n)
@@ -127,6 +102,8 @@ int findGcd(int phiN, int e) {
 
 (int, int) generatePublicKey(int p, int q) {
   int n = p * q;
+  // phi (φ) is called euclid's totient, and now
+  // we are computing φ(n) below.
   int phi = (p - 1) * (q - 1);
 
   for (int i = 0; i < primes.length; i++) {
@@ -141,26 +118,18 @@ int findGcd(int phiN, int e) {
 // function to generate private key (d, n)
 (int, int) obtainPrivateKey(int p, int q, int e) {
   int phi = (p - 1) * (q - 1);
+  int n = p * q;
   // use bezout's algorithm, find numbers x and y
   // such that e * x + phi * y = 1
   // now, we can substiture x with d, so that
   // e * d + phi * y = 1
   // let's pass it on to the bezout function to obtain x.
   // since y is not our concern here.
-  int d = bezout(phi, e);
+  int d= 0, x = 0, prevX = 0, y = 1, prevY = 0;
 
-  return (d, p * q);
-}
+  (d,  y) = bezout(e, phi);
+  // in case d is negative, ensuring it is positive
+  d = (d + phi) % phi;
 
-int powMod(int base, int exponent, int modulus) {
-  int result = 1;
-  base = base % modulus;
-  while (exponent > 0) {
-    if (exponent % 2 == 1) {
-      result = (result * base) % modulus;
-    }
-    exponent = exponent ~/ 2;
-    base = (base * base) % modulus;
-  }
-  return result;
+  return (d, n);
 }
